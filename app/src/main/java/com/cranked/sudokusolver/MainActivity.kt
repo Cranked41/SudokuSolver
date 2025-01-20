@@ -175,6 +175,32 @@ class MainActivity : AppCompatActivity() {
             intArrayOf(7, 0, 0, 0, 0, 0, 0, 0, 0)
         )
     )
+    val hardSudoku9 = SudokuModel(
+        arrayName = "hardSudoku9", arrayOf(
+            intArrayOf(2, 4, 1, 6, 0, 0, 0, 0, 0),
+            intArrayOf(0, 0, 0, 0, 8, 0, 0, 0, 0),
+            intArrayOf(8, 0, 3, 0, 0, 0, 0, 1, 6),
+            intArrayOf(9, 6, 0, 3, 0, 0, 8, 2, 0),
+            intArrayOf(0, 7, 0, 9, 6, 8, 3, 0, 0),
+            intArrayOf(0, 0, 0, 4, 0, 0, 6, 0, 0),
+            intArrayOf(0, 1, 0, 8, 5, 2, 0, 6, 4),
+            intArrayOf(7, 0, 6, 1, 0, 3, 9, 0, 0),
+            intArrayOf(0, 0, 5, 0, 0, 0, 0, 0, 0)
+        )
+    )
+    val hardSudoku10 = SudokuModel(
+        arrayName = "hardSudoku10",arrayOf(
+            intArrayOf(0, 7, 0, 0, 0, 0, 0, 4, 3),
+            intArrayOf(0, 4, 0, 0, 0, 9, 6, 1, 0),
+            intArrayOf(8, 0, 0, 6, 3, 4, 9, 0, 0),
+            intArrayOf(0, 9, 4, 0, 5, 2, 0, 0, 0),
+            intArrayOf(3, 5, 8, 4, 6, 0, 0, 2, 0),
+            intArrayOf(0, 0, 0, 8, 0, 0, 5, 3, 0),
+            intArrayOf(0, 8, 0, 0, 7, 0, 0, 9, 1),
+            intArrayOf(9, 0, 2, 1, 0, 0, 0, 0, 5),
+            intArrayOf(0, 0, 7, 0, 4, 0, 8, 0, 2)
+        )
+    )
 
 
     private lateinit var binding: ActivityMainBinding
@@ -203,8 +229,11 @@ class MainActivity : AppCompatActivity() {
                         hardSudoku5,
                         hardSudoku6,
                         hardSudoku7,
-                        hardSudoku8
-                    ).random()
+                        hardSudoku8,
+                        hardSudoku9,
+                        hardSudoku10,
+
+                        ).random()
                     if (isValidSudoku(selectedArray.intArray)) {
                         if (solveSudokuAsync(selectedArray.intArray)) {
                             binding.sudokuOutput.text = selectedArray.arrayName
@@ -217,7 +246,8 @@ class MainActivity : AppCompatActivity() {
                             binding.sudokuOutput.text = "Sudoku çözülemedi."
                         }
                     } else {
-                        binding.sudokuOutput.text = "Sudoku matrisi geçersiz!"
+                        binding.sudokuOutput.text =
+                            "Sudoku ${selectedArray.arrayName} matrisi geçersiz!"
                     }
                 }
                 binding.timeTakenTextView.text = "Çözüm süresi ${timeTaken} ms"
