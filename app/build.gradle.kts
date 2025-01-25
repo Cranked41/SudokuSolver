@@ -49,5 +49,17 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.coroutines.android)
+    //CameraX
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.camera2)
+
+    //TessOcr
+    implementation(libs.tflite.task.vision)
+    implementation(libs.tflite.gpu.delegate)
+    implementation(libs.tflite.gpu)
+    implementation(libs.tflite)
+    implementation(libs.tesseract4android)
+
 
 }

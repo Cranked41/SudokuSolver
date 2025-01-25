@@ -10,6 +10,16 @@ material = "1.12.0"
 activity = "1.9.3"
 constraintlayout = "2.1.4"
 coroutines = "1.7.3"
+camera = "1.4.0" # Kullanmak istediğiniz sürüm
+tesseract4android = "4.1.1"
+tflite-task-vision = "0.4.0"
+tflite-gpu-delegate = "0.4.0"
+tflite-gpu = "2.9.0"
+tflite = "2.16.1"
+tesseract = "4.1.1"
+tess-two = "9.1.0"
+
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -21,6 +31,16 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
+tflite-task-vision = { group = "org.tensorflow", name = "tensorflow-lite-task-vision", version.ref = "tflite-task-vision" }
+tflite-gpu-delegate = { group = "org.tensorflow", name = "tensorflow-lite-gpu-delegate-plugin", version.ref = "tflite-gpu-delegate" }
+tflite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tflite-gpu" }
+tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
+tesseract4android = { group = "cz.adaptech", name = "tesseract4android", version.ref = "tesseract4android" }
+
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
