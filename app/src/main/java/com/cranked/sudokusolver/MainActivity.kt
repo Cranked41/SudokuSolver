@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private val sudokuSolver = SudokuSolver()
     private var tessOcr = TessOcr(this@MainActivity)
     private var trainedDataFileName = "eng.traineddata"
+    private var tfLiteFileName = "sudoku_model.tflite"
 
     private val mainActivityViewModel: MainActivityViewModel by viewModels()
     private val requestPermissionLauncher =
@@ -153,7 +154,7 @@ class MainActivity : AppCompatActivity() {
         image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
          */
         val bitmap = image.toBitmap() ?: return
-        mainActivityViewModel.sendResultBitmap(bitmap)
+        mainActivityViewModel.checkSudoku(context = this@MainActivity, bitmap)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -183,26 +184,38 @@ class MainActivity : AppCompatActivity() {
         // İzin verildi
         cameraExecutor = Executors.newSingleThreadExecutor()
         binding.viewFinder.post { setUpCamera() }
-        val assetFile = this.getAssetAsFile(trainedDataFileName)
+        val trainnedDataFromAssetFile = this.getAssetAsFile(trainedDataFileName)
+        val tfLiteFromAssetFile = this.getAssetAsFile(trainedDataFileName)
 
-        val targetFile =
+        val tessDataFile =
             this.applicationContext.getExternalFilesDir("model/tessdata")
                 .toString()
-        val trainedDataFileName = File(targetFile, trainedDataFileName)
+        val targetFile =
+            this.applicationContext.getExternalFilesDir("model")
+                .toString()
+        val trainedDataFileName = File(tessDataFile, trainedDataFileName)
         if (!trainedDataFileName.exists()) {
             trainedDataFileName.createNewFile()
         }
-        FileUtil.copyFile(assetFile, trainedDataFileName.absolutePath)
+        val tfLiteModelFile = File(targetFile, tfLiteFileName)
+        if (!tfLiteModelFile.exists()) {
+            tfLiteModelFile.createNewFile()
+        }
+        FileUtil.copyFile(trainnedDataFromAssetFile, trainedDataFileName.absolutePath)
+        FileUtil.copyFile(tfLiteFromAssetFile, tfLiteModelFile.absolutePath)
         tessOcr.initializeOcr()
         initClickListener()
         observeData()
     }
 
     private fun observeData() {
-        mainActivityViewModel.resultBitmap.observe(this) {
+        mainActivityViewModel.resultBitmap.observe(this) { resultBitmap ->
             CoroutineScope(Dispatchers.IO + CoroutineCustomExceptionHandler.handler).launch {
-                val result = tessOcr.ocrCamera.convertImageToText(it)
-                println("Ocrsonuçları  $result")
+                resultBitmap?.let {
+                    val result = tessOcr.ocrCamera.convertImageToText(it)
+                    println("Ocrsonuçları  $result")
+                }
+
             }
         }
     }
