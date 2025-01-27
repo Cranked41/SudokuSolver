@@ -46,17 +46,20 @@ class MainActivityViewModel : ViewModel() {
                 sudokuDetectionTF = SudokuDetectionTF(context, modelPath)
             }
             // Koordinatları algılayın
-            val coordinates = sudokuDetectionTF!!.detectSudokuCoordinates(rotateBitmap)
+            //  val coordinates = sudokuDetectionTF!!.detectSudokuCoordinates(rotateBitmap)
 
             // Kareleri kesmek için koordinatları kullanın
-            val croppedCell = sudokuDetectionTF!!.extractCellsFromBitmap(rotateBitmap, coordinates)
-            croppedCell.forEach {
-                _resultBitmap.postValue(it)
-            }
+            /* val croppedCell = sudokuDetectionTF!!.extractCellsFromBitmap(rotateBitmap, coordinates)
+             croppedCell.forEach {
+                 _resultBitmap.postValue(it)
+             }
+
+             */
             // Kesilen karelerle işleme devam edin
 
             sudokuLock = false
         }
     }
+
 
 }

@@ -12,6 +12,7 @@ import java.nio.channels.FileChannel
 class SudokuDetectionTF(context: Context, modelPath: String) {
 
     private val interpreter: Interpreter = Interpreter(File(modelPath))
+    val processor = SudokuGridProcessor()
 
     // Load TFLite model from assets
     private fun loadModelFile(context: Context, modelPath: String): MappedByteBuffer {
@@ -42,20 +43,22 @@ class SudokuDetectionTF(context: Context, modelPath: String) {
 
     // Modeli çalıştır ve koordinatları al
     fun detectSudokuCoordinates(bitmap: Bitmap): List<IntArray> {
-        val output =
-            Array(1) { FloatArray(324) }  // 81 kare * 4 koordinat (x_min, y_min, x_max, y_max)
+        val output = Array(1) { FloatArray(324) }  // 81 kare * 4 koordinat (x_min, y_min, x_max, y_max)
         val input = preprocessImage(bitmap)
         interpreter.run(input, output)
 
         // Çıktıyı düzenle
         val coordinates = mutableListOf<IntArray>()
         for (i in 0 until 81) {
-            val xMin = output[0][i * 4].toInt()
-            val yMin = output[0][i * 4 + 1].toInt()
-            val xMax = output[0][i * 4 + 2].toInt()
-            val yMax = output[0][i * 4 + 3].toInt()
+            val xMin = ((output[0][i * 4] + 1) * bitmap.width / 2).toInt()
+            val yMin = ((output[0][i * 4 + 1] + 1) * bitmap.height / 2).toInt()
+            val xMax = ((output[0][i * 4 + 2] + 1) * bitmap.width / 2).toInt()
+            val yMax = ((output[0][i * 4 + 3] + 1) * bitmap.height / 2).toInt()
+            // Koordinatların geçerli olduğundan emin olun
             if (xMin < xMax && yMin < yMax && xMin >= 0 && yMin >= 0) {
                 coordinates.add(intArrayOf(xMin, yMin, xMax, yMax))
+            } else {
+                println("Geçersiz koordinat: ($xMin, $yMin), ($xMax, $yMax)")
             }
         }
         return coordinates
@@ -83,18 +86,14 @@ class SudokuDetectionTF(context: Context, modelPath: String) {
     // Sudoku karelerinin Bitmap'lerini oluştur
     fun extractCellsFromBitmap(originalBitmap: Bitmap, coordinates: List<IntArray>): List<Bitmap> {
         val cells = mutableListOf<Bitmap>()
-        for (coord in coordinates) {
+        coordinates.forEach { coord ->
             val (xMin, yMin, xMax, yMax) = coord
-            val width = xMax - xMin
-            val height = yMax - yMin
-
-            // Genişlik veya yükseklik 0 veya negatifse null döndür
-            if (width <= 0 || height <= 0) {
-                continue
+            try {
+                val croppedCell = Bitmap.createBitmap(originalBitmap, xMin, yMin, xMax - xMin, yMax - yMin)
+                cells.add(croppedCell)
+            } catch (e: IllegalArgumentException) {
+                println("Hata: Geçersiz koordinatlar ($xMin, $yMin, $xMax, $yMax)")
             }
-            val croppedCell =
-                Bitmap.createBitmap(originalBitmap, xMin, yMin, xMax - xMin, yMax - yMin)
-            cells.add(croppedCell)
         }
         return cells
     }

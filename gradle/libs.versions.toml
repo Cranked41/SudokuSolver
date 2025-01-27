@@ -18,6 +18,8 @@ tflite-gpu = "2.9.0"
 tflite = "2.16.1"
 tesseract = "4.1.1"
 tess-two = "9.1.0"
+opencv = "4.5.3.0"
+
 
 
 
@@ -39,6 +41,7 @@ tflite-gpu-delegate = { group = "org.tensorflow", name = "tensorflow-lite-gpu-de
 tflite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tflite-gpu" }
 tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
 tesseract4android = { group = "cz.adaptech", name = "tesseract4android", version.ref = "tesseract4android" }
+opencv = { module = "com.quickbirdstudios:opencv", version.ref = "opencv" }
 
 
 

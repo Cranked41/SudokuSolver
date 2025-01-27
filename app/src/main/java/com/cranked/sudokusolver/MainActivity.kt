@@ -4,8 +4,14 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -27,10 +33,12 @@ import com.cranked.sudokusolver.utils.file_utils.FileUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.opencv.android.OpenCVLoader
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.system.measureTimeMillis
+import kotlin.time.measureTimedValue
 
 class MainActivity : AppCompatActivity() {
     private var preview: Preview? = null
@@ -69,11 +77,56 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
+        val inputBitmap = drawableToBitmap(getDrawable(R.drawable.sudoku_test)!!)
+
         setContentView(binding.root)
+        OpenCVLoader.initDebug()
 
         this@MainActivity.supportActionBar?.hide()
         checkAndRequestCameraPermission()
+        try {
+            // SudokuSolver'ı başlat
+            val solver = SudokuProcessor()
 
+            // Sudoku hücrelerini çıkar
+           val a= measureTimeMillis {
+                val cells: List<Bitmap> = solver.extractSudokuCells(inputBitmap)
+
+            }
+
+            // Hücreler başarılı bir şekilde alındıysa
+            Toast.makeText(
+                this,
+                "Hücreler başarıyla alındı: ${a.toInt()} ms!",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            // İhtiyaca göre hücreleri işleyin (örneğin, bir RecyclerView'da gösterin)
+        } catch (e: Exception) {
+            // Bir hata durumunda kullanıcıyı bilgilendir
+            Toast.makeText(this, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun drawableToBitmap(drawable: Drawable): Bitmap {
+        // Eğer drawable zaten BitmapDrawable ise, direkt Bitmap döndür
+        if (drawable is BitmapDrawable) {
+            drawable.bitmap?.let { return it }
+        }
+
+        // Drawable'ın boyutlarını kontrol et
+        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
+        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
+
+        // Bitmap oluştur
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        // Drawable'ı Canvas kullanarak Bitmap'e çiz
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+
+        return bitmap
     }
 
     private fun setUpCamera() {

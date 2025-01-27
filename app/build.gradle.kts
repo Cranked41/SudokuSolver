@@ -35,7 +35,9 @@ android {
     }
     buildFeatures {
         viewBinding = true
+
     }
+
 }
 
 dependencies {
@@ -60,6 +62,7 @@ dependencies {
     implementation(libs.tflite.gpu)
     implementation(libs.tflite)
     implementation(libs.tesseract4android)
+    implementation(libs.opencv)
 
 
 }
