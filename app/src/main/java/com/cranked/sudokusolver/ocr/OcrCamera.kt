@@ -3,13 +3,14 @@ package com.cranked.sudokusolver.ocr
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Build
-import android.text.Html
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class OcrCamera(
-    private val mImageTextReader: ImageTextReader,
+    val mImageTextReader: ImageTextReader,
     private val resultListener: ResultListener
 ) {
 
@@ -42,19 +43,17 @@ class OcrCamera(
     private var releaseTextReader = true
 
     @SuppressLint("SetTextI18n")
-    suspend fun convertImageToText(bitmap: Bitmap) {
-        try {
-            if (!releaseTextReader) return
-            releaseTextReader = false
+    suspend fun convertImageToText(bitmap: Bitmap): String? = withContext(Dispatchers.IO) {
 
-            val bitmapProcess = BitmapOcrUtils.preProcessBitmap(bitmap)
-            val res = mImageTextReader.getTextFromBitmap(bitmapProcess)
-            val cleanText = Html.fromHtml(res).toString().trim().replace(" ", "")
-            resultListener.ocrOnSuccess(cleanText)
-            releaseTextReader = true
-        } catch (e: Exception) {
-            resultListener.ocrOnError(e)
+        return@withContext bitmap?.let {
+            mImageTextReader.getTextFromBitmap(it)?.let {
+                it
+            } ?: run {
+                ""
+            }
         }
+
+
     }
 
     interface ResultListener {

@@ -5,13 +5,11 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -25,20 +23,24 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.cranked.sudokusolver.databinding.ActivityMainBinding
 import com.cranked.sudokusolver.extensions.getAssetAsFile
+import com.cranked.sudokusolver.extensions.preProcessBitmap
+import com.cranked.sudokusolver.extensions.processForOCR
+import com.cranked.sudokusolver.extensions.reduceNoise
 import com.cranked.sudokusolver.extensions.showToast
+import com.cranked.sudokusolver.extensions.toGrayscale
 import com.cranked.sudokusolver.ocr.CameraAnalysisConfig
+import com.cranked.sudokusolver.ocr.MlKitOcrHelper
 import com.cranked.sudokusolver.ocr.TessOcr
-import com.cranked.sudokusolver.utils.CoroutineCustomExceptionHandler
 import com.cranked.sudokusolver.utils.file_utils.FileUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.system.measureTimeMillis
-import kotlin.time.measureTimedValue
 
 class MainActivity : AppCompatActivity() {
     private var preview: Preview? = null
@@ -50,8 +52,10 @@ class MainActivity : AppCompatActivity() {
     private var tessOcr = TessOcr(this@MainActivity)
     private var trainedDataFileName = "eng.traineddata"
     private var tfLiteFileName = "sudoku_model.tflite"
-
+    private val sudokuResultHasMap = hashMapOf<Int, String>()
     private val mainActivityViewModel: MainActivityViewModel by viewModels()
+    val mlKitOcrHelper = MlKitOcrHelper()
+
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val deniedPermissions = permissions.filterValues { !it }
@@ -84,28 +88,6 @@ class MainActivity : AppCompatActivity() {
 
         this@MainActivity.supportActionBar?.hide()
         checkAndRequestCameraPermission()
-        try {
-            // SudokuSolver'ı başlat
-            val solver = SudokuProcessor()
-
-            // Sudoku hücrelerini çıkar
-           val a= measureTimeMillis {
-                val cells: List<Bitmap> = solver.extractSudokuCells(inputBitmap)
-
-            }
-
-            // Hücreler başarılı bir şekilde alındıysa
-            Toast.makeText(
-                this,
-                "Hücreler başarıyla alındı: ${a.toInt()} ms!",
-                Toast.LENGTH_SHORT
-            ).show()
-
-            // İhtiyaca göre hücreleri işleyin (örneğin, bir RecyclerView'da gösterin)
-        } catch (e: Exception) {
-            // Bir hata durumunda kullanıcıyı bilgilendir
-            Toast.makeText(this, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
     }
 
     fun drawableToBitmap(drawable: Drawable): Bitmap {
@@ -263,12 +245,42 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeData() {
         mainActivityViewModel.resultBitmap.observe(this) { resultBitmap ->
-            CoroutineScope(Dispatchers.IO + CoroutineCustomExceptionHandler.handler).launch {
-                resultBitmap?.let {
-                    val result = tessOcr.ocrCamera.convertImageToText(it)
-                    println("Ocrsonuçları  $result")
-                }
+            resultBitmap?.let {
+                CoroutineScope(Dispatchers.IO).launch {
+                    it.forEachIndexed { index, bitmap ->
+                        val text = CoroutineScope(Dispatchers.IO).async {
+                            val result =
+                                tessOcr.ocrCamera.convertImageToText(
+                                    bitmap.preProcessBitmap().reduceNoise().toGrayscale()
+                                )
+                            return@async result
+                        }.await()
+                        sudokuResultHasMap[index] =
+                            if (text?.length == 2) text?.first().toString() else text ?: ""
+                    }
+                    val intArray =
+                        mainActivityViewModel.convertHashMapToSudokuArray(sudokuResultHasMap)
+                    val sudokuSolver = SudokuSolver()
+                    println("SudokuResultHasMap: $sudokuResultHasMap")
 
+                    if (sudokuSolver.isValidSudoku(intArray)) {
+                        println("ValidArray: $intArray")
+                        val isSolved = sudokuSolver.solveSudokuAsync(intArray)
+                        if (isSolved) {
+                            CoroutineScope(Dispatchers.Main).launch {
+                                binding.sudokuResultImageView.setImageBitmap(
+                                    sudokuSolver.drawSudokuGrid(
+                                        intArray
+                                    )
+                                )
+                                showToast("Çözüldü")
+                            }
+                        }
+                    }
+
+
+                    mainActivityViewModel.initOcrVariable()
+                }
             }
         }
     }

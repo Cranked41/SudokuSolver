@@ -19,6 +19,7 @@ tflite = "2.16.1"
 tesseract = "4.1.1"
 tess-two = "9.1.0"
 opencv = "4.5.3.0"
+mlkit-text-recognition = "19.0.1"
 
 
 
@@ -42,6 +43,7 @@ tflite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.r
 tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
 tesseract4android = { group = "cz.adaptech", name = "tesseract4android", version.ref = "tesseract4android" }
 opencv = { module = "com.quickbirdstudios:opencv", version.ref = "opencv" }
+mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkit-text-recognition" }
 
 
 

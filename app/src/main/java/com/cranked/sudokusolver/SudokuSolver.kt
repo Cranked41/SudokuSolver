@@ -14,7 +14,95 @@ class SudokuSolver {
         }
     }
 
+    fun solveSudoku(board: Array<IntArray>): Boolean {
+        val fixedCells = getFixedCells(board) // Sabit hücreleri belirle
 
+        for (row in 0..8) {
+            for (col in 0..8) {
+                // Sabit hücre ise atla, değiştirme!
+                if (fixedCells.contains(Pair(row, col))) {
+                    continue
+                }
+
+                if (board[row][col] == 0) { // Boş hücreyse sayı dene
+                    for (num in 1..9) {
+                        if (isSafe(board, row, col, num)) {
+                            board[row][col] = num
+                            if (solveSudoku(board) && isValidSudoku(board)) { // Sudoku geçerli mi kontrol et
+                                return true
+                            }
+                            board[row][col] = 0 // Geri alma (backtracking)
+                        }
+                    }
+                    return false // Çözüm bulunamazsa geri adım at
+                }
+            }
+        }
+
+        // Çözüm tamamlandıktan sonra Sudoku kurallarına uygun mu kontrol et
+        return isValidSudoku(board) && !hasEmptyRowOrColumn(board)
+    }
+
+    // **Sabit hücreleri belirleyen fonksiyon**
+    fun getFixedCells(board: Array<IntArray>): Set<Pair<Int, Int>> {
+        val fixedCells = mutableSetOf<Pair<Int, Int>>()
+        for (row in 0..8) {
+            for (col in 0..8) {
+                if (board[row][col] != 0) {
+                    fixedCells.add(Pair(row, col))
+                }
+            }
+        }
+        return fixedCells
+    }
+
+    // **Sudoku kurallarına uygunluğu kontrol eden fonksiyon**
+    fun isSafe(board: Array<IntArray>, row: Int, col: Int, num: Int): Boolean {
+        // Satır kontrolü
+        if (board[row].contains(num)) return false
+
+        // Sütun kontrolü
+        for (i in 0..8) {
+            if (board[i][col] == num) return false
+        }
+
+        // 3x3 kutu kontrolü
+        val boxRowStart = (row / 3) * 3
+        val boxColStart = (col / 3) * 3
+        for (i in 0..2) {
+            for (j in 0..2) {
+                if (board[boxRowStart + i][boxColStart + j] == num) return false
+            }
+        }
+
+        return true
+    }
+
+    // **Eğer bir satır veya sütun tamamen 0 ise Sudoku geçersizdir**
+    fun hasEmptyRowOrColumn(board: Array<IntArray>): Boolean {
+        // Satır kontrolü: Eğer bir satır tamamen 0 ise, false dön
+        for (row in board) {
+            if (row.all { it == 0 }) {
+                return true
+            }
+        }
+
+        // Sütun kontrolü: Eğer bir sütun tamamen 0 ise, false dön
+        for (col in 0..8) {
+            var isEmpty = true
+            for (row in 0..8) {
+                if (board[row][col] != 0) {
+                    isEmpty = false
+                    break
+                }
+            }
+            if (isEmpty) return true
+        }
+
+        return false
+    }
+
+    // **Sudoku'nun geçerli olup olmadığını kontrol eden fonksiyon**
     fun isValidSudoku(grid: Array<IntArray>): Boolean {
         // Satır ve sütun kontrolü
         for (i in 0..8) {
@@ -22,12 +110,16 @@ class SudokuSolver {
             val colSet = mutableSetOf<Int>()
             for (j in 0..8) {
                 // Satırda tekrar eden sayı kontrolü
-                if (grid[i][j] != 0 && !rowSet.add(grid[i][j])) {
-                    return false
+                if (grid[i][j] != 0) {
+                    if (grid[i][j] !in 1..9 || !rowSet.add(grid[i][j])) {
+                        return false
+                    }
                 }
                 // Sütunda tekrar eden sayı kontrolü
-                if (grid[j][i] != 0 && !colSet.add(grid[j][i])) {
-                    return false
+                if (grid[j][i] != 0) {
+                    if (grid[j][i] !in 1..9 || !colSet.add(grid[j][i])) {
+                        return false
+                    }
                 }
             }
         }
@@ -39,57 +131,19 @@ class SudokuSolver {
                 for (i in 0..2) {
                     for (j in 0..2) {
                         val value = grid[blockRow * 3 + i][blockCol * 3 + j]
-                        if (value != 0 && !blockSet.add(value)) {
-                            return false
-                        }
-                    }
-                }
-            }
-        }
-        return true
-    }
-
-
-    fun solveSudoku(board: Array<IntArray>): Boolean {
-        for (row in 0..8) {
-            for (col in 0..8) {
-                if (board[row][col] == 0) {
-                    for (num in 1..9) {
-                        if (isSafe(board, row, col, num)) {
-                            board[row][col] = num
-                            if (solveSudoku(board)) {
-                                return true
+                        if (value != 0) {
+                            if (!blockSet.add(value)) {
+                                return false
                             }
-                            board[row][col] = 0
                         }
                     }
-                    return false
                 }
             }
         }
-        return true
+        return true&&!hasEmptyRowOrColumn(grid)
     }
 
-    fun isSafe(board: Array<IntArray>, row: Int, col: Int, num: Int): Boolean {
-        // Satır kontrolü
-        if (board[row].contains(num)) return false
 
-        // Sütun kontrolü
-        for (i in 0..8) {
-            if (board[i][col] == num) return false
-        }
-
-        // 3x3 blok kontrolü
-        val startRow = row - row % 3
-        val startCol = col - col % 3
-        for (i in 0..2) {
-            for (j in 0..2) {
-                if (board[startRow + i][startCol + j] == num) return false
-            }
-        }
-
-        return true
-    }
 
     fun drawSudokuGrid(sudoku: Array<IntArray>, cellSize: Int = 100): Bitmap {
         val gridSize = sudoku.size

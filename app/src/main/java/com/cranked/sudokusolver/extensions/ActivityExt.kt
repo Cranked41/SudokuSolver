@@ -45,4 +45,9 @@ fun Activity.copyAssetToInternalStorage(assetFileName: String, targetDirName: St
 
     return targetFile
 }
+fun CharSequence?.isNotNullOrEmptyOrBlank(): Boolean =
+    this.isNullOrEmpty().not() && this?.isBlank()?.not() == true && this != "null"
+
+fun CharSequence?.isNullOrEmptyOrBlank(): Boolean =
+    this.isNullOrEmpty() || this?.isBlank() == true || this == "null"
 

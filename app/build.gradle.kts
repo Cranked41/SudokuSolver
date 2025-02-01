@@ -63,6 +63,8 @@ dependencies {
     implementation(libs.tflite)
     implementation(libs.tesseract4android)
     implementation(libs.opencv)
+    implementation (libs.mlkit.text.recognition)
+
 
 
 }
