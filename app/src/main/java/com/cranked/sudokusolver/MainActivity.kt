@@ -3,14 +3,7 @@ package com.cranked.sudokusolver
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -25,20 +18,17 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.cranked.sudokusolver.databinding.ActivityMainBinding
 import com.cranked.sudokusolver.extensions.getAssetAsFile
 import com.cranked.sudokusolver.extensions.isNullOrEmptyOrBlank
 import com.cranked.sudokusolver.extensions.preprocessImage
 import com.cranked.sudokusolver.extensions.showToast
-import com.cranked.sudokusolver.model.OcrResultModel
 import com.cranked.sudokusolver.model.SudokuResultModel
 import com.cranked.sudokusolver.ocr.MlKitOcrHelper
 import com.cranked.sudokusolver.ocr.TessOcr
 import com.cranked.sudokusolver.tensorflow.CameraSettings
+import com.cranked.sudokusolver.utils.BitmapUtil
 import com.cranked.sudokusolver.utils.file_utils.FileUtil
-import com.cranked.sudokusolver.utils.maze.ImageUtil.drawableToBitmap
 import com.cranked.sudokusolver.utils.maze.ImageUtil.imageToBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,7 +62,7 @@ class MainActivity : AppCompatActivity() {
 
             if (deniedPermissions.isEmpty()) {
                 // Tüm izinler verildi
-                initiateTfLite()
+                initiateTessOcr()
             } else {
                 // Reddedilen izinler varsa
                 showToast("Bazı izinler reddedildi: ${deniedPermissions.keys}")
@@ -96,7 +86,8 @@ class MainActivity : AppCompatActivity() {
         initClickListener()
         setContentView(binding.root)
         OpenCVLoader.initDebug()
-
+        initClickListener()
+        observeData()
         onBackPressedDispatcher.addCallback(this) {
             if (binding.resultLinLayout.visibility == View.VISIBLE) {
                 // Result ekranındayken geri: yeniden dene gibi davran
@@ -173,54 +164,7 @@ class MainActivity : AppCompatActivity() {
         setCamera()
     }
 
-    private fun overlaySolutionOnGrid(
-        gridBitmap: Bitmap,
-        original: Array<IntArray>,
-        solved: Array<IntArray>
-    ): Bitmap {
-        val out = gridBitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val canvas = Canvas(out)
 
-        val cellW = out.width / 9f
-        val cellH = out.height / 9f
-
-        val givenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
-            style = Paint.Style.FILL
-            textAlign = Paint.Align.CENTER
-            textSize = cellH * 0.70f
-        }
-
-        val solvedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(0, 120, 255) // çözülen rakamlar mavi
-            style = Paint.Style.FILL
-            textAlign = Paint.Align.CENTER
-            textSize = cellH * 0.70f
-        }
-
-        // Dikey merkezleme için baseline hesapla
-        fun baselineForRow(r: Int, paint: Paint): Float {
-            val yTop = r * cellH
-            val yCenter = yTop + cellH / 2f
-            val fm = paint.fontMetrics
-            return yCenter - (fm.ascent + fm.descent) / 2f
-        }
-
-        for (r in 0 until 9) {
-            for (c in 0 until 9) {
-                val v = solved[r][c]
-                if (v == 0) continue
-
-                val xCenter = c * cellW + cellW / 2f
-                val paint = if (original[r][c] == 0) solvedPaint else givenPaint
-                val yBase = baselineForRow(r, paint)
-
-                canvas.drawText(v.toString(), xCenter, yBase, paint)
-            }
-        }
-
-        return out
-    }
 
     private fun showSolvedOnUi(finalBitmap: Bitmap) {
         binding.solvedSudokuImageView.setImageBitmap(finalBitmap)
@@ -280,7 +224,7 @@ class MainActivity : AppCompatActivity() {
     private fun checkAndRequestCameraPermission() {
         when {
             checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED -> {
-                initiateTfLite()
+                initiateTessOcr()
             }
 
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
@@ -295,32 +239,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initiateTfLite() {
+    private fun initiateTessOcr() {
         // İzin verildi
         cameraExecutor = Executors.newSingleThreadExecutor()
         setCamera()
         val trainnedDataFromAssetFile = this.getAssetAsFile(trainedDataFileName)
-        val tfLiteFromAssetFile = this.getAssetAsFile(trainedDataFileName)
-
         val tessDataFile =
             this.applicationContext.getExternalFilesDir("model/tessdata")
-                .toString()
-        val targetFile =
-            this.applicationContext.getExternalFilesDir("model")
-                .toString()
+
         val trainedDataFileName = File(tessDataFile, trainedDataFileName)
         if (!trainedDataFileName.exists()) {
             trainedDataFileName.createNewFile()
         }
-        val tfLiteModelFile = File(targetFile, tfLiteFileName)
-        if (!tfLiteModelFile.exists()) {
-            tfLiteModelFile.createNewFile()
-        }
+
         FileUtil.copyFile(trainnedDataFromAssetFile, trainedDataFileName.absolutePath)
-        FileUtil.copyFile(tfLiteFromAssetFile, tfLiteModelFile.absolutePath)
+
         tessOcr.initializeOcr()
-        initClickListener()
-        observeData()
+
     }
 
     private fun observeData() {
@@ -379,7 +314,7 @@ class MainActivity : AppCompatActivity() {
 
                                 val gridBitmap = mainActivityViewModel.gridBitmapLiveData.value
                                 val solvedBitmap = if (gridBitmap != null) {
-                                    overlaySolutionOnGrid(gridBitmap, original, intArray)
+                                    BitmapUtil.overlaySolutionOnGrid(gridBitmap, original, intArray)
                                 } else {
                                     // fallback: eğer grid bitmap yoksa, mevcut çizim fonksiyonunu kullan
                                     sudokuSolver.drawSudokuGrid(intArray)
@@ -397,7 +332,7 @@ class MainActivity : AppCompatActivity() {
         }
         mainActivityViewModel.rotateBitmapLiveData.observe(this) {
             CoroutineScope(Dispatchers.Main).launch {
-                binding.rotateBitmap.setImageBitmap(it)
+                //binding.rotateBitmap.setImageBitmap(it)
             }
         }
         mainActivityViewModel.gridBitmapLiveData.observe(this) {

@@ -70,17 +70,22 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/_30sdp">
 
             <ImageView
                 android:id="@+id/rotateBitmap"
                 android:layout_width="60dp"
-                android:layout_height="60dp" />
+                android:layout_height="60dp"
+                android:layout_marginHorizontal="@dimen/_5sdp"
+                android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/imageSudokuGridBitmap"
                 android:layout_width="60dp"
-                android:layout_height="60dp" />
+                android:layout_height="60dp"
+
+                android:layout_marginHorizontal="@dimen/_5sdp" />
 
         </LinearLayout>
 
