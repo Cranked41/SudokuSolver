@@ -3,103 +3,187 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="#07121E">
 
+    <!-- Camera preview (full screen) -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
-        app:scaleType="fitCenter">
+        app:scaleType="fillCenter" />
 
-    </androidx.camera.view.PreviewView>
+    <!-- Top bar (AI / tech feel) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:background="#0C1D31">
 
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Sudoku Solver"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="#EAF6FF" />
+
+        <TextView
+            android:id="@+id/subTitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AI Scan"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:textColor="#00D6FF"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:background="#132B44" />
+    </LinearLayout>
+
+    <!-- Bottom scrim for controls readability (gradient-like using alpha) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:layout_gravity="bottom"
+        android:background="#AA07121E" />
+
+    <!-- Bottom controls + result UI -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_gravity="bottom"
         android:gravity="bottom"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="18dp">
 
-        <Button
+        <!-- Solve button (shown when sudoku detected) -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/solve_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Sudoku'yu Çöz"
-            android:visibility="gone" />
+            android:textColor="#07121E"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:cornerRadius="14dp"
+            app:backgroundTint="#00E5A8"
+            app:iconGravity="textStart"
+            app:rippleColor="#3300D6FF" />
 
+        <!-- Optional debug output (hidden) -->
         <TextView
             android:id="@+id/sudokuOutput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
+            android:layout_marginTop="10dp"
             android:gravity="center"
-            android:paddingTop="16dp"
             android:text="Sudoku Çözümü Burada Gösterilecek"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold"
+            android:textColor="#EAF6FF"
             android:visibility="gone" />
 
-        <LinearLayout
+        <!-- Result card (AI style) -->
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/resultLinLayout"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:visibility="gone"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#3300D6FF"
+            app:cardBackgroundColor="#0C1D31">
 
-            <ImageView
-                android:id="@+id/solvedSudokuImageView"
-                android:layout_width="@dimen/_200sdp"
-                android:layout_height="@dimen/_200sdp"
-                android:layout_marginVertical="@dimen/_10sdp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/tryAgainButton"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="15dp"
-                android:text="@string/retry"
-                android:textColor="@color/white"
-                app:backgroundTint="@color/green"
-                app:cornerRadius="10dp" />
-        </LinearLayout>
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="16dp">
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/solution"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#EAF6FF"
+                    android:gravity="center" />
+
+                <ImageView
+                    android:id="@+id/solvedSudokuImageView"
+                    android:layout_width="@dimen/_240sdp"
+                    android:layout_height="@dimen/_240sdp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:scaleType="fitCenter" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tryAgainButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/retry"
+                    android:textStyle="bold"
+                    android:textColor="#EAF6FF"
+                    app:cornerRadius="14dp"
+                    app:backgroundTint="#132B44"
+                    app:rippleColor="#3300E5A8" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Small preview thumbnails row (kept) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/_30sdp">
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical">
 
             <ImageView
                 android:id="@+id/rotateBitmap"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_marginHorizontal="@dimen/_5sdp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="10dp"
                 android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/imageSudokuGridBitmap"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp" />
 
-                android:layout_marginHorizontal="@dimen/_5sdp" />
-
+            <TextView
+                android:id="@+id/timeTakenTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:textColor="#B7D9F0"
+                android:textSize="12sp"
+                android:gravity="end"
+                android:visibility="gone" />
         </LinearLayout>
 
+        <!-- Legacy hidden view (kept for compatibility) -->
         <ImageView
             android:id="@+id/sudokuResultImageView"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
             android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/timeTakenTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:visibility="gone" />
     </LinearLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

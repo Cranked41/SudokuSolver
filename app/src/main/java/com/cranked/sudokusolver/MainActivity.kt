@@ -39,6 +39,7 @@ import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.system.measureTimeMillis
+import androidx.core.view.isVisible
 
 class MainActivity : AppCompatActivity() {
     private var preview: Preview? = null
@@ -121,8 +122,6 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
-
     private fun setCamera() {
         val processCameraProvider = CameraSettings.processCameraProvider(this)
         cameraProvider = processCameraProvider
@@ -136,7 +135,7 @@ class MainActivity : AppCompatActivity() {
         preview.surfaceProvider = binding.previewView.surfaceProvider
 
         analysis.setAnalyzer(Executors.newSingleThreadExecutor()) { proxy ->
-            if (binding.resultLinLayout.visibility == View.VISIBLE) {
+            if (binding.resultLinLayout.isVisible) {
                 proxy.close()
                 return@setAnalyzer
             }
@@ -163,7 +162,6 @@ class MainActivity : AppCompatActivity() {
         // yeniden bind
         setCamera()
     }
-
 
 
     private fun showSolvedOnUi(finalBitmap: Bitmap) {
@@ -229,7 +227,7 @@ class MainActivity : AppCompatActivity() {
 
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 // Kullanıcı daha önce reddetmiş, izin neden gerektiğini açıklayın
-                showToast("Lütfen Kamera iznini veriniz")
+                showToast(this.getString(R.string.please_grant_camera_permission))
                 requestPermissionLauncher.launch(requiredPermissions.toTypedArray())
             }
 
@@ -320,7 +318,7 @@ class MainActivity : AppCompatActivity() {
                                     sudokuSolver.drawSudokuGrid(intArray)
                                 }
                                 showSolvedOnUi(solvedBitmap)
-                                showToast(getString(R.string.sudokuSolved))
+                                //showToast(getString(R.string.sudokuSolved))
                             }
                         }
                     }
