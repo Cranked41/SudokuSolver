@@ -245,13 +245,22 @@ fun Bitmap.preprocessImage(): Bitmap {
     )
 
     // Morphological cleanup
+    // Close first to preserve/restore strokes (important for 6/9 loops), then open to remove specks.
+    val kClose = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(3.0, 3.0))
     val kOpen = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(2.0, 2.0))
-    val kClose = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(3.0, 3.0))
-    Imgproc.morphologyEx(bin, bin, Imgproc.MORPH_OPEN, kOpen)
-    Imgproc.morphologyEx(bin, bin, Imgproc.MORPH_CLOSE, kClose)
+
+    // Fill tiny gaps/holes inside digits (6/9) and thicken broken strokes a bit.
+    Imgproc.morphologyEx(bin, bin, Imgproc.MORPH_CLOSE, kClose, org.opencv.core.Point(-1.0, -1.0), 2)
+
+    // Remove small isolated noise without eating away digit holes.
+    Imgproc.morphologyEx(bin, bin, Imgproc.MORPH_OPEN, kOpen, org.opencv.core.Point(-1.0, -1.0), 1)
 
     // Crop to content
     val content = bin.cropToContent(whiteThreshold = 245)
+
+    // After crop, do a very light close again to avoid white "bites" on digits like 6/9.
+    val postClose = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(2.0, 2.0))
+    Imgproc.morphologyEx(content, content, Imgproc.MORPH_CLOSE, postClose, org.opencv.core.Point(-1.0, -1.0), 1)
 
     // Ensure black foreground on white background
     if (content.shouldInvertForOCR()) {

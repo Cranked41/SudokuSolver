@@ -255,7 +255,8 @@ class MainActivity : AppCompatActivity() {
                             }.await()
                             sudokuResultHasMap[index] =
                                 if (ocrResultModel?.ocr?.length == 2) ocrResultModel?.ocr?.first()
-                                    .toString() else ocrResultModel?.ocr ?: ""
+                                    .toString() else if (ocrResultModel?.ocr?.length!! > 2 == true) "0" else ocrResultModel?.ocr
+                                    ?: ""
                             ocrResultModelList.add(
                                 SudokuResultModel(
                                     text = ocrResultModel?.ocr ?: "",
