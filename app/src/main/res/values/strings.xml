@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SudokuSolver</string>
+    <string name="retry">Yeniden Dene</string>
+    <string name="sudokuSolved">Sudoku çözüldü</string>
 </resources>

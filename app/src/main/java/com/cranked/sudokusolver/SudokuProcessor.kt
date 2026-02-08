@@ -239,9 +239,11 @@ class SudokuProcessor {
 
     // Hücre boş mu? (rakam yok) — OCR'ı atlamak için hızlı kontrol
     fun isCellEmpty(cellGray: Mat): Boolean {
+        // 1) Hafif blur (gürültüyü azalt)
         val blur = Mat()
         Imgproc.GaussianBlur(cellGray, blur, Size(3.0, 3.0), 0.0)
 
+        // 2) Binary (digit = white)
         val bin = Mat()
         Imgproc.adaptiveThreshold(
             blur, bin, 255.0,
@@ -249,20 +251,72 @@ class SudokuProcessor {
             Imgproc.THRESH_BINARY_INV, 11, 2.0
         )
 
-        // İnce çizgi gürültüsünü azalt (çok hafif)
-        val k = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(2.0, 2.0))
-        Imgproc.morphologyEx(bin, bin, Imgproc.MORPH_OPEN, k)
+        // 3) Kenar (grid çizgisi) etkisini azalt: border'ı sıfırla
+        // (ince '7' gibi rakamları öldürmeden çizgi gürültüsünü azaltır)
+        val pad = (minOf(bin.rows(), bin.cols()) * 0.10).toInt().coerceAtLeast(2)
+        // Üst / alt
+        bin.rowRange(0, pad).setTo(Scalar(0.0))
+        bin.rowRange(bin.rows() - pad, bin.rows()).setTo(Scalar(0.0))
+        // Sol / sağ
+        bin.colRange(0, pad).setTo(Scalar(0.0))
+        bin.colRange(bin.cols() - pad, bin.cols()).setTo(Scalar(0.0))
 
+        // 4) Çok hafif close (stroke'ları birleştirir, 7 gibi ince rakamlarda yardımcı)
+        val k = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(2.0, 2.0))
+        Imgproc.morphologyEx(bin, bin, Imgproc.MORPH_CLOSE, k)
+
+        // 5) Hızlı yoğunluk ölçümü
         val nonZero = Core.countNonZero(bin)
         val total = bin.rows() * bin.cols()
+        val density = nonZero.toDouble() / total.toDouble()
+
+        // 6) Bağlı bileşen analizi: ince rakamları (örn. 7) yakalamak için geometri kontrolü
+        val labels = Mat()
+        val stats = Mat()
+        val centroids = Mat()
+        val n = Imgproc.connectedComponentsWithStats(bin, labels, stats, centroids)
+
+        val hMin = (bin.rows() * 0.25).toInt().coerceAtLeast(6)   // rakam boyu en az hücrenin %25'i
+        val wMin = (bin.cols() * 0.08).toInt().coerceAtLeast(3)   // rakam eni en az hücrenin %8'i
+        val minArea = (total * 0.002).toInt().coerceAtLeast(12)   // çok küçük noktaları ele
+
+        var hasValidDigit = false
+        var maxArea = 0
+
+        for (i in 1 until n) { // 0 = background
+            val area = stats.get(i, Imgproc.CC_STAT_AREA)?.get(0)?.toInt() ?: 0
+            if (area > maxArea) maxArea = area
+            if (area < minArea) continue
+
+            val w = stats.get(i, Imgproc.CC_STAT_WIDTH)?.get(0)?.toInt() ?: 0
+            val h = stats.get(i, Imgproc.CC_STAT_HEIGHT)?.get(0)?.toInt() ?: 0
+
+            // BBox çok küçükse gürültü
+            if (w < wMin || h < hMin) continue
+
+            // BBox içi doluluk oranı: aşırı düşükse (tek çizgi gürültüsü) ele
+            val fill = area.toDouble() / (w.toDouble() * h.toDouble()).coerceAtLeast(1.0)
+            if (fill < 0.03) continue
+
+            hasValidDigit = true
+            break
+        }
 
         // cleanup
         blur.release()
         bin.release()
         k.release()
+        labels.release()
+        stats.release()
+        centroids.release()
 
-        // Piksel yoğunluğu düşükse boş kabul et
-        return nonZero < (total * 0.06) // %2 altı boş say
+        // Karar:
+        // - Hiç geçerli bileşen yoksa boş
+        // - Yoğunluk çok düşük olsa bile (7 gibi) geçerli bileşen varsa DOLU
+        // - Yoğunluk aşırı yüksekse zaten doludur (kalın yazı / gölge)
+        if (hasValidDigit) return false
+        if (density > 0.10) return false
+        return density < 0.02
     }
 
     suspend fun extractSudokuCells(

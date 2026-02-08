@@ -140,7 +140,7 @@ class SudokuSolver {
                 }
             }
         }
-        return true&&!hasEmptyRowOrColumn(grid)
+        return true
     }
 
 

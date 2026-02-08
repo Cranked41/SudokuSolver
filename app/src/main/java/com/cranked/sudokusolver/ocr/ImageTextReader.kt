@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 class ImageTextReader(
     val path: String?,
     val pathName: String?,
-    val pageSegMode: Int = 1
+    val pageSegMode: Int = TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR
 ) {
 
     private var api: TessBaseAPI? = null
@@ -50,12 +50,20 @@ class ImageTextReader(
 
             //Ocr Image
             val ocrbitmap = bitmap
-            api?.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789")
+            // Only digits, single character
+            api?.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_CHAR
+            api?.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "123456789")
+            api?.setVariable("tessedit_char_whitelist", "123456789")
+            api?.setVariable("classify_bln_numeric_mode", "1")
             api?.setImage(ocrbitmap)
 
             //OCR RESULT
             var textOnImage: String? = try {
-                api?.utF8Text?.trim() ?: ""
+                (api?.utF8Text ?: "")
+                    .trim()
+                    .firstOrNull { it.isDigit() }
+                    ?.toString()
+                    ?: ""
             } catch (e: Exception) {
                 println("OcrHata$e")
                 ""

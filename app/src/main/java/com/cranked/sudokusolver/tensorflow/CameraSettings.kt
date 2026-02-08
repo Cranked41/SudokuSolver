@@ -3,6 +3,7 @@ package com.cranked.sudokusolver.tensorflow
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Size
+import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -16,8 +17,8 @@ object CameraSettings {
 
     fun preview(): Preview {
         return Preview.Builder().apply {
+            setTargetResolution(Size(1920, 1080))
             setMaxResolution(Size(1920, 1080))
-            setDefaultResolution(Size(1280, 720))
         }.build()
     }
 
@@ -26,9 +27,8 @@ object CameraSettings {
         return ImageAnalysis.Builder().apply {
             setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
             setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-
+            setTargetResolution(Size(1920, 1080))
             setMaxResolution(Size(1920, 1080))
-            setDefaultResolution(Size(1280, 720))
         }.build()
     }
 }

@@ -6,11 +6,16 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -33,6 +38,7 @@ import com.cranked.sudokusolver.ocr.MlKitOcrHelper
 import com.cranked.sudokusolver.ocr.TessOcr
 import com.cranked.sudokusolver.tensorflow.CameraSettings
 import com.cranked.sudokusolver.utils.file_utils.FileUtil
+import com.cranked.sudokusolver.utils.maze.ImageUtil.drawableToBitmap
 import com.cranked.sudokusolver.utils.maze.ImageUtil.imageToBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -86,43 +92,142 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
 
-        val inputBitmap = drawableToBitmap(getDrawable(R.drawable.sudoku_test)!!)
+//        val inputBitmap = drawableToBitmap(getDrawable(R.drawable.sudoku_test)!!)
         initClickListener()
         setContentView(binding.root)
         OpenCVLoader.initDebug()
 
-        this@MainActivity.supportActionBar?.hide()
-        checkAndRequestCameraPermission()
-    }
-
-    fun drawableToBitmap(drawable: Drawable): Bitmap {
-        // Eğer drawable zaten BitmapDrawable ise, direkt Bitmap döndür
-        if (drawable is BitmapDrawable) {
-            drawable.bitmap?.let { return it }
+        onBackPressedDispatcher.addCallback(this) {
+            if (binding.resultLinLayout.visibility == View.VISIBLE) {
+                // Result ekranındayken geri: yeniden dene gibi davran
+                binding.solvedSudokuImageView.setImageDrawable(null)
+                resumeCamera()
+            } else {
+                // Normal geri davranışı
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+            }
         }
 
-        // Drawable'ın boyutlarını kontrol et
-        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
-        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
-
-        // Bitmap oluştur
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-
-        // Drawable'ı Canvas kullanarak Bitmap'e çiz
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-
-        return bitmap
+        this@MainActivity.supportActionBar?.hide()
+        checkAndRequestCameraPermission()
+        val model = SudokuTestModel().sudokuModels[0]
+        CoroutineScope(Dispatchers.Default).launch {
+            val initTime = System.currentTimeMillis()
+            println("Sudoku ValidState ${sudokuSolver.isValidSudoku(model.intArray)}")
+            val result = sudokuSolver.solveSudokuAsync(model.intArray)
+            if (result) {
+                println("Çözdü: ${System.currentTimeMillis() - initTime} ms")
+                printSudokuAsString(model.intArray)
+            }
+        }
     }
 
-    private fun setUpCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this@MainActivity)
-        cameraProviderFuture.addListener(
-            {
-                cameraProvider = cameraProviderFuture.get()
-            }, ContextCompat.getMainExecutor(this@MainActivity)
-        )
+    fun printSudokuAsString(sudoku: Array<IntArray>) {
+        sudoku.forEach { row ->
+            println(row.joinToString(" "))
+        }
+    }
+
+
+
+
+    private fun setCamera() {
+        val processCameraProvider = CameraSettings.processCameraProvider(this)
+        cameraProvider = processCameraProvider
+        val cameraSelector = CameraSettings.cameraSelector()
+        val preview = CameraSettings.preview()
+        val analysis = CameraSettings.analysis()
+
+        binding.previewView.scaleType = PreviewView.ScaleType.FILL_CENTER
+        binding.previewView.implementationMode = PreviewView.ImplementationMode.PERFORMANCE
+
+        preview.surfaceProvider = binding.previewView.surfaceProvider
+
+        analysis.setAnalyzer(Executors.newSingleThreadExecutor()) { proxy ->
+            if (binding.resultLinLayout.visibility == View.VISIBLE) {
+                proxy.close()
+                return@setAnalyzer
+            }
+            detectSquares(proxy)
+        }
+
+        _camera = processCameraProvider.bindToLifecycle(this, cameraSelector, preview, analysis)
+    }
+
+    private fun stopCamera() {
+        try {
+            cameraProvider?.unbindAll()
+        } catch (_: Throwable) {
+        }
+    }
+
+    private fun resumeCamera() {
+        binding.resultLinLayout.visibility = View.GONE
+        binding.previewView.visibility = View.VISIBLE
+        startCamera()
+    }
+
+    private fun startCamera() {
+        // yeniden bind
+        setCamera()
+    }
+
+    private fun overlaySolutionOnGrid(
+        gridBitmap: Bitmap,
+        original: Array<IntArray>,
+        solved: Array<IntArray>
+    ): Bitmap {
+        val out = gridBitmap.copy(Bitmap.Config.ARGB_8888, true)
+        val canvas = Canvas(out)
+
+        val cellW = out.width / 9f
+        val cellH = out.height / 9f
+
+        val givenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            style = Paint.Style.FILL
+            textAlign = Paint.Align.CENTER
+            textSize = cellH * 0.70f
+        }
+
+        val solvedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(0, 120, 255) // çözülen rakamlar mavi
+            style = Paint.Style.FILL
+            textAlign = Paint.Align.CENTER
+            textSize = cellH * 0.70f
+        }
+
+        // Dikey merkezleme için baseline hesapla
+        fun baselineForRow(r: Int, paint: Paint): Float {
+            val yTop = r * cellH
+            val yCenter = yTop + cellH / 2f
+            val fm = paint.fontMetrics
+            return yCenter - (fm.ascent + fm.descent) / 2f
+        }
+
+        for (r in 0 until 9) {
+            for (c in 0 until 9) {
+                val v = solved[r][c]
+                if (v == 0) continue
+
+                val xCenter = c * cellW + cellW / 2f
+                val paint = if (original[r][c] == 0) solvedPaint else givenPaint
+                val yBase = baselineForRow(r, paint)
+
+                canvas.drawText(v.toString(), xCenter, yBase, paint)
+            }
+        }
+
+        return out
+    }
+
+    private fun showSolvedOnUi(finalBitmap: Bitmap) {
+        binding.solvedSudokuImageView.setImageBitmap(finalBitmap)
+        binding.resultLinLayout.visibility = View.VISIBLE
+        binding.previewView.visibility = View.GONE
+        binding.solveButton.visibility = View.GONE
+        stopCamera()
     }
 
     @SuppressLint("SetTextI18n")
@@ -150,22 +255,12 @@ class MainActivity : AppCompatActivity() {
                 binding.timeTakenTextView.text = "Çözüm süresi ${timeTaken} ms"
             }
         }
-    }
-
-    private fun setCamera() {
-        val processCameraProvider = CameraSettings.processCameraProvider(this)
-        val cameraSelector = CameraSettings.cameraSelector()
-        val preview = CameraSettings.preview()
-        val analysis = CameraSettings.analysis()
-        binding.previewView.scaleType = PreviewView.ScaleType.FIT_CENTER
-        preview.surfaceProvider = binding.previewView.surfaceProvider
-
-        analysis.setAnalyzer(Executors.newSingleThreadExecutor()) {
-            detectSquares(it)
+        binding.tryAgainButton.setOnClickListener {
+            binding.solvedSudokuImageView.setImageDrawable(null)
+            resumeCamera()
         }
-
-        _camera = processCameraProvider.bindToLifecycle(this, cameraSelector, preview, analysis)
     }
+
 
     private fun detectSquares(image: ImageProxy) {/*
         if (!::bitmapBuffer.isInitialized) {
@@ -268,26 +363,29 @@ class MainActivity : AppCompatActivity() {
                     }
                     val intArray =
                         mainActivityViewModel.convertHashMapToSudokuArray(sudokuResultHasMap)
+                    val original = intArray.map { it.clone() }.toTypedArray()
                     val sudokuSolver = SudokuSolver()
                     println("SudokuResultHasMap: $sudokuResultHasMap")
-                    println(
-                        "SudokuIntArray: ${
-                            intArray.toList()
-                                .map { it.toTypedArray().toList().map { it.toString() } }
-
-                        }"
-                    )
+                    println("SudokuIntArray")
+                    printSudokuAsString(intArray)
+                    println("---------------------------\n")
                     if (sudokuSolver.isValidSudoku(intArray)) {
-                        println("ValidArray: $intArray")
+                        printSudokuAsString(intArray)
                         val isSolved = sudokuSolver.solveSudokuAsync(intArray)
                         if (isSolved) {
                             CoroutineScope(Dispatchers.Main).launch {
-                                binding.sudokuResultImageView.setImageBitmap(
-                                    sudokuSolver.drawSudokuGrid(
-                                        intArray
-                                    )
-                                )
-                                showToast("Çözüldü")
+                                println("Solved")
+                                printSudokuAsString(intArray)
+
+                                val gridBitmap = mainActivityViewModel.gridBitmapLiveData.value
+                                val solvedBitmap = if (gridBitmap != null) {
+                                    overlaySolutionOnGrid(gridBitmap, original, intArray)
+                                } else {
+                                    // fallback: eğer grid bitmap yoksa, mevcut çizim fonksiyonunu kullan
+                                    sudokuSolver.drawSudokuGrid(intArray)
+                                }
+                                showSolvedOnUi(solvedBitmap)
+                                showToast(getString(R.string.sudokuSolved))
                             }
                         }
                     }
@@ -305,9 +403,9 @@ class MainActivity : AppCompatActivity() {
         mainActivityViewModel.gridBitmapLiveData.observe(this) {
             CoroutineScope(Dispatchers.Main).launch {
                 binding.imageSudokuGridBitmap.setImageBitmap(it)
-                if (it == null) {
-                    binding.sudokuResultImageView.setImageBitmap(it)
-                }
+                /* if (it == null) {
+                     binding.sudokuResultImageView.setImageBitmap(it)
+                 }*/
             }
         }
     }

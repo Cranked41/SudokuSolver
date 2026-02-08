@@ -41,10 +41,32 @@
             android:textStyle="bold"
             android:visibility="gone" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/ocrResultRecyclerView"
+        <LinearLayout
+            android:id="@+id/resultLinLayout"
             android:layout_width="match_parent"
-            android:layout_height="150dp" />
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/solvedSudokuImageView"
+                android:layout_width="@dimen/_200sdp"
+                android:layout_height="@dimen/_200sdp"
+                android:layout_marginVertical="@dimen/_10sdp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/tryAgainButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="15dp"
+                android:text="@string/retry"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/green"
+                app:cornerRadius="10dp" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -65,12 +87,14 @@
         <ImageView
             android:id="@+id/sudokuResultImageView"
             android:layout_width="100dp"
-            android:layout_height="100dp" />
+            android:layout_height="100dp"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/timeTakenTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center" />
+            android:gravity="center"
+            android:visibility="gone" />
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

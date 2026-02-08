@@ -1,6 +1,8 @@
 package com.cranked.sudokusolver.utils.maze
 
 import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import androidx.camera.core.ImageProxy
 import java.io.ByteArrayOutputStream
 
@@ -84,7 +86,26 @@ object ImageUtil {
         val imageBytes: ByteArray = out.toByteArray()
         return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
     }
+    fun drawableToBitmap(drawable: Drawable): Bitmap {
+        // Eğer drawable zaten BitmapDrawable ise, direkt Bitmap döndür
+        if (drawable is BitmapDrawable) {
+            drawable.bitmap?.let { return it }
+        }
 
+        // Drawable'ın boyutlarını kontrol et
+        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
+        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
+
+        // Bitmap oluştur
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        // Drawable'ı Canvas kullanarak Bitmap'e çiz
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+
+        return bitmap
+    }
     private fun yuv420888ToNv21(image: ImageProxy): ByteArray {
         val pixelCount = image.cropRect.width() * image.cropRect.height()
         val pixelSizeBits = ImageFormat.getBitsPerPixel(ImageFormat.YUV_420_888)

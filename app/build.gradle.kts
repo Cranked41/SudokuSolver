@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.tesseract4android)
     implementation(libs.opencv)
     implementation (libs.mlkit.text.recognition)
+    implementation(libs.sdp.android)
 
 
 

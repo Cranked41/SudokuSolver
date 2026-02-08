@@ -20,7 +20,7 @@ tesseract = "4.1.1"
 tess-two = "9.1.0"
 opencv = "4.5.3.0"
 mlkit-text-recognition = "19.0.1"
-
+sdp = "1.1.1"
 
 
 
@@ -44,7 +44,7 @@ tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tf
 tesseract4android = { group = "cz.adaptech", name = "tesseract4android", version.ref = "tesseract4android" }
 opencv = { module = "com.quickbirdstudios:opencv", version.ref = "opencv" }
 mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkit-text-recognition" }
-
+sdp-android = { group = "com.intuit.sdp", name = "sdp-android", version.ref = "sdp" }
 
 
 [plugins]

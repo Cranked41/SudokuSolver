@@ -4,15 +4,15 @@ class SudokuTestModel {
 
     private val sudoku = SudokuModel(
         arrayName = "sudoku", arrayOf(
-            intArrayOf(3, 8, 0, 9, 0, 0, 2, 0, 5),
-            intArrayOf(0, 0, 0, 0, 0, 8, 7, 3, 0),
-            intArrayOf(0, 6, 0, 3, 0, 0, 9, 8, 0),
-            intArrayOf(0, 0, 0, 0, 0, 3, 5, 0, 1),
-            intArrayOf(9, 1, 0, 5, 0, 7, 0, 2, 3),
-            intArrayOf(7, 0, 3, 1, 0, 0, 0, 0, 0),
-            intArrayOf(0, 3, 5, 0, 0, 1, 0, 9, 0),
-            intArrayOf(0, 7, 4, 6, 0, 0, 0, 0, 0),
-            intArrayOf(8, 0, 1, 0, 0, 2, 0, 6, 7)
+            intArrayOf(0, 3, 0, 0, 5, 0, 4, 0, 7),
+            intArrayOf(1, 0, 0, 0, 4, 0, 0, 0, 2),
+            intArrayOf(9, 0, 0, 0, 7, 0, 0, 0, 0),
+            intArrayOf(6, 0, 0, 0, 0, 8, 0, 0, 3),
+            intArrayOf(0, 0, 0, 0, 0, 0, 9, 7, 0),
+            intArrayOf(0, 9, 0, 0, 0, 2, 0, 6, 0),
+            intArrayOf(0, 0, 5, 0, 2, 0, 0, 0, 6),
+            intArrayOf(3, 0, 0, 0, 0, 1, 0, 0, 4),
+            intArrayOf(0, 0, 0, 0, 0, 0, 0, 0, 0)
         )
     )
     private val sudokuFromGrid = SudokuModel(
