@@ -8,6 +8,7 @@ import android.graphics.drawable.Drawable
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.cranked.sudokusolver.model.SudokuOcrModel
 import com.cranked.sudokusolver.tensorflow.SudokuDetectionTF
 import com.cranked.sudokusolver.utils.maze.ImageUtil
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -26,8 +27,15 @@ class MainActivityViewModel : ViewModel() {
 
 
     private var sudokuDetectionTF: SudokuDetectionTF? = null
-    private var _resultBitmap = MutableLiveData<List<Bitmap>>()
-    var resultBitmap: LiveData<List<Bitmap>> = _resultBitmap
+    private var _resultBitmap = MutableLiveData<List<SudokuOcrModel>>()
+    var resultBitmap: LiveData<List<SudokuOcrModel>> = _resultBitmap
+
+    private var _rotateBitmapMutableLiveData = MutableLiveData<Bitmap?>()
+    var rotateBitmapLiveData: LiveData<Bitmap?> = _rotateBitmapMutableLiveData
+
+    private var _gridBitmapMutableLiveData = MutableLiveData<Bitmap?>()
+    var gridBitmapLiveData: LiveData<Bitmap?> = _gridBitmapMutableLiveData
+
     val solver = SudokuProcessor()
 
     fun sendResultBitmap(resultBitmap: Bitmap) {
@@ -44,19 +52,24 @@ class MainActivityViewModel : ViewModel() {
             val rotateBitmap =
                 ImageUtil.rotateImage(bitmap = bitmap, rotationDegrees = rotationDegrees)
 
-            val modelPath = context.applicationContext.getExternalFilesDir("model")
-                .toString() + File.separator + "sudoku_model.tflite"
-            val testRotateBitmap = drawableToBitmap(context.getDrawable(R.drawable.test15)!!)
+            _rotateBitmapMutableLiveData.postValue(rotateBitmap)
             val imageSudokuGrid = solver.extractSudokuGrid(rotateBitmap)
+            _gridBitmapMutableLiveData.postValue(imageSudokuGrid)
             imageSudokuGrid?.let {
+                var tempBitmap = it
+                /* val smallGridList = solver.detect3x3Blocks(tempBitmap)
+                 smallGridList?.forEachIndexed { index, sudokuBlockModel ->
+                     println("SudokuBlock Blok $index: ${sudokuBlockModel.rect}")
+
+                 }*/
                 val cells = solver.extractSudokuCells(it)
                 if (cells.size == 81 && !sudokuLock) {
                     sudokuLock = true
+                    /*         val croppedSquaresList = cells.map { solver.removeBorders(it) }
+                                 .toList()*/
                     _resultBitmap.postValue(
                         cells
-                            .toList()
                     )
-
                 }
             }
         }
@@ -82,6 +95,7 @@ class MainActivityViewModel : ViewModel() {
 
         return bitmap
     }
+
     fun convertHashMapToSudokuArray(sudokuResultHasMap: HashMap<Int, String>): Array<IntArray> {
         val sudokuArray = Array(9) { IntArray(9) } // 9x9 Sudoku dizisi oluştur
 
@@ -95,9 +109,12 @@ class MainActivityViewModel : ViewModel() {
 
         return sudokuArray
     }
+
     fun initOcrVariable() {
         sudokuLock = false
     }
+
+    fun getSudokuLock() = sudokuLock
 
 
 }

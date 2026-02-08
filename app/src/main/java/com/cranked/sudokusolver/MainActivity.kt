@@ -15,23 +15,25 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.cranked.sudokusolver.databinding.ActivityMainBinding
 import com.cranked.sudokusolver.extensions.getAssetAsFile
-import com.cranked.sudokusolver.extensions.preProcessBitmap
-import com.cranked.sudokusolver.extensions.processForOCR
-import com.cranked.sudokusolver.extensions.reduceNoise
+import com.cranked.sudokusolver.extensions.isNullOrEmptyOrBlank
+import com.cranked.sudokusolver.extensions.preprocessImage
 import com.cranked.sudokusolver.extensions.showToast
-import com.cranked.sudokusolver.extensions.toGrayscale
-import com.cranked.sudokusolver.ocr.CameraAnalysisConfig
+import com.cranked.sudokusolver.model.OcrResultModel
+import com.cranked.sudokusolver.model.SudokuResultModel
 import com.cranked.sudokusolver.ocr.MlKitOcrHelper
 import com.cranked.sudokusolver.ocr.TessOcr
+import com.cranked.sudokusolver.tensorflow.CameraSettings
 import com.cranked.sudokusolver.utils.file_utils.FileUtil
+import com.cranked.sudokusolver.utils.maze.ImageUtil.imageToBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -45,17 +47,19 @@ import kotlin.system.measureTimeMillis
 class MainActivity : AppCompatActivity() {
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
-    private var camera: Camera? = null
+    private var _camera: Camera? = null
+
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var cameraExecutor: ExecutorService
     private val sudokuSolver = SudokuSolver()
     private var tessOcr = TessOcr(this@MainActivity)
-    private var trainedDataFileName = "eng.traineddata"
-    private var tfLiteFileName = "sudoku_model.tflite"
+    private var trainedDataFileName = "digits.traineddata"
+    private var tfLiteFileName = "ocr_model.tflite"
+
     private val sudokuResultHasMap = hashMapOf<Int, String>()
     private val mainActivityViewModel: MainActivityViewModel by viewModels()
     val mlKitOcrHelper = MlKitOcrHelper()
-
+    private val ocrResultModelList = arrayListOf<SudokuResultModel>()
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val deniedPermissions = permissions.filterValues { !it }
@@ -81,8 +85,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
-        val inputBitmap = drawableToBitmap(getDrawable(R.drawable.sudoku_test)!!)
 
+        val inputBitmap = drawableToBitmap(getDrawable(R.drawable.sudoku_test)!!)
+        initClickListener()
         setContentView(binding.root)
         OpenCVLoader.initDebug()
 
@@ -116,7 +121,6 @@ class MainActivity : AppCompatActivity() {
         cameraProviderFuture.addListener(
             {
                 cameraProvider = cameraProviderFuture.get()
-                bindCameraUseCases()
             }, ContextCompat.getMainExecutor(this@MainActivity)
         )
     }
@@ -148,34 +152,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Asenkron Sudoku çözüm fonksiyonu
-    private fun bindCameraUseCases() {
-        val cameraProvider = cameraProvider ?: run {
-            println("Hata oluştu CameraProvider")
-            return
+    private fun setCamera() {
+        val processCameraProvider = CameraSettings.processCameraProvider(this)
+        val cameraSelector = CameraSettings.cameraSelector()
+        val preview = CameraSettings.preview()
+        val analysis = CameraSettings.analysis()
+        binding.previewView.scaleType = PreviewView.ScaleType.FIT_CENTER
+        preview.surfaceProvider = binding.previewView.surfaceProvider
+
+        analysis.setAnalyzer(Executors.newSingleThreadExecutor()) {
+            detectSquares(it)
         }
-        val cameraSelector =
-            CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
 
-        preview = CameraAnalysisConfig.previewBuilder(binding.viewFinder.display!!.rotation)
-        //binding.viewFinder.implementationMode =  PreviewView.ImplementationMode.PERFORMANCE
-
-        imageAnalyzer =
-            CameraAnalysisConfig.imageBuilder(binding.viewFinder.display!!.rotation).also {
-                it.setAnalyzer(cameraExecutor) { image ->
-                    detectSquares(image)
-                    image.close()
-                }
-            }
-
-        cameraProvider.unbindAll()
-
-        try {
-            camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
-            preview?.setSurfaceProvider(binding.viewFinder.surfaceProvider)
-        } catch (exc: Exception) {
-            println("CameraProvider:  $exc")
-        }
+        _camera = processCameraProvider.bindToLifecycle(this, cameraSelector, preview, analysis)
     }
 
     private fun detectSquares(image: ImageProxy) {/*
@@ -188,14 +177,10 @@ class MainActivity : AppCompatActivity() {
         }
         image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
          */
-        val bitmap = image.toBitmap() ?: return
-        mainActivityViewModel.checkSudoku(context = this@MainActivity, bitmap)
+        val bitmap = image.imageToBitmap() ?: return
+        mainActivityViewModel.checkSudoku(context = this@MainActivity, bitmap, rotationDegrees = 0f)
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        imageAnalyzer?.targetRotation = binding.viewFinder.display!!.rotation
-    }
 
     private fun checkAndRequestCameraPermission() {
         when {
@@ -218,7 +203,7 @@ class MainActivity : AppCompatActivity() {
     private fun initiateTfLite() {
         // İzin verildi
         cameraExecutor = Executors.newSingleThreadExecutor()
-        binding.viewFinder.post { setUpCamera() }
+        setCamera()
         val trainnedDataFromAssetFile = this.getAssetAsFile(trainedDataFileName)
         val tfLiteFromAssetFile = this.getAssetAsFile(trainedDataFileName)
 
@@ -246,23 +231,51 @@ class MainActivity : AppCompatActivity() {
     private fun observeData() {
         mainActivityViewModel.resultBitmap.observe(this) { resultBitmap ->
             resultBitmap?.let {
-                CoroutineScope(Dispatchers.IO).launch {
-                    it.forEachIndexed { index, bitmap ->
-                        val text = CoroutineScope(Dispatchers.IO).async {
-                            val result =
-                                tessOcr.ocrCamera.convertImageToText(
-                                    bitmap.preProcessBitmap().reduceNoise().toGrayscale()
+                ocrResultModelList.clear()
+                CoroutineScope(Dispatchers.Default).launch {
+                    it.forEachIndexed { index, sudokuOcrModel ->
+                        if (sudokuOcrModel.notOcr) {
+                            sudokuResultHasMap[index] = "0"
+                        } else {
+                            val processedbitmap =
+                                sudokuOcrModel.cellBitmap.preprocessImage()
+                            val ocrResultModel = CoroutineScope(Dispatchers.Default).async {
+
+                                val resultModel =
+                                    tessOcr.ocrCamera.convertImageToText(
+                                        processedbitmap
+                                    )
+                                if ((resultModel?.accuracy
+                                        ?: 0) < 20 || resultModel?.ocr.isNullOrEmptyOrBlank()
+                                ) {
+                                    resultModel?.ocr = "0"
+                                }
+
+                                return@async resultModel
+                            }.await()
+                            sudokuResultHasMap[index] =
+                                if (ocrResultModel?.ocr?.length == 2) ocrResultModel?.ocr?.first()
+                                    .toString() else ocrResultModel?.ocr ?: ""
+                            ocrResultModelList.add(
+                                SudokuResultModel(
+                                    text = ocrResultModel?.ocr ?: "",
+                                    accuracy = ocrResultModel?.accuracy ?: 0,
+                                    cellBitmap = processedbitmap
                                 )
-                            return@async result
-                        }.await()
-                        sudokuResultHasMap[index] =
-                            if (text?.length == 2) text?.first().toString() else text ?: ""
+                            )
+                        }
                     }
                     val intArray =
                         mainActivityViewModel.convertHashMapToSudokuArray(sudokuResultHasMap)
                     val sudokuSolver = SudokuSolver()
                     println("SudokuResultHasMap: $sudokuResultHasMap")
+                    println(
+                        "SudokuIntArray: ${
+                            intArray.toList()
+                                .map { it.toTypedArray().toList().map { it.toString() } }
 
+                        }"
+                    )
                     if (sudokuSolver.isValidSudoku(intArray)) {
                         println("ValidArray: $intArray")
                         val isSolved = sudokuSolver.solveSudokuAsync(intArray)
@@ -280,6 +293,19 @@ class MainActivity : AppCompatActivity() {
 
 
                     mainActivityViewModel.initOcrVariable()
+                }
+            }
+        }
+        mainActivityViewModel.rotateBitmapLiveData.observe(this) {
+            CoroutineScope(Dispatchers.Main).launch {
+                binding.rotateBitmap.setImageBitmap(it)
+            }
+        }
+        mainActivityViewModel.gridBitmapLiveData.observe(this) {
+            CoroutineScope(Dispatchers.Main).launch {
+                binding.imageSudokuGridBitmap.setImageBitmap(it)
+                if (it == null) {
+                    binding.sudokuResultImageView.setImageBitmap(it)
                 }
             }
         }

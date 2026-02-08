@@ -22,7 +22,7 @@ class TessOcr(
 
     private var tessOcrFilePath: String? = null
     private var tessOcrFileDocPath: String? = null
-    private var tessOcrFilePathName: String = "eng"
+    private var tessOcrFilePathName: String = "digits"
 
     private fun initOcrPath() {
         tessOcrFileDocPath = activity.getExternalFilesDir("model")
