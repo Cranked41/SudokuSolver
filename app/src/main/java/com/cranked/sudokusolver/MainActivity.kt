@@ -83,15 +83,19 @@ class MainActivity : AppCompatActivity() {
         initClickListener()
         observeData()
         onBackPressedDispatcher.addCallback(this) {
-            if (binding.resultLinLayout.isVisible) {
+            val isResultVisible = binding.resultLinLayout.isVisible || drawProcessOnSudoku
+            // isEnabled = true  // Removed this line as per instructions
+            println("Geri Bastı $drawProcessOnSudoku")
+            if (isResultVisible) {
                 // Result ekranındayken geri: yeniden dene gibi davran
                 binding.solvedSudokuImageView.setImageDrawable(null)
                 resumeCamera()
+                return@addCallback
             } else {
-                // Normal geri davranışı
                 isEnabled = false
-                onBackPressedDispatcher.onBackPressed()
             }
+            // Normal geri davranışı (callback'i devre dışı bırakıp delegasyon yap)
+            onBackPressedDispatcher.onBackPressed()
         }
 
         this@MainActivity.supportActionBar?.hide()
@@ -104,6 +108,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun resetToInitialState() {
+        // UI
+        drawProcessOnSudoku = false
+        binding.solvedSudokuImageView.setImageDrawable(null)
+        binding.resultLinLayout.isVisible = false
+        binding.previewView.isVisible = true
+        binding.solveButton.isVisible = false
+
+        // OCR / parsing state
+        sudokuResultHasMap.clear()
+        ocrResultModelList.clear()
+        mainActivityViewModel.initOcrVariable()
+
+        // Camera
+        stopCamera()
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        }
+    }
 
     private fun setCamera() {
         val processCameraProvider = CameraSettings.processCameraProvider(this)
@@ -136,10 +159,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resumeCamera() {
-        drawProcessOnSudoku = false
-        binding.resultLinLayout.visibility = View.GONE
-        binding.previewView.visibility = View.VISIBLE
-        startCamera()
+        resetToInitialState()
     }
 
     private fun startCamera() {
@@ -150,9 +170,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSolvedOnUi(finalBitmap: Bitmap) {
         binding.solvedSudokuImageView.setImageBitmap(finalBitmap)
-        binding.resultLinLayout.visibility = View.VISIBLE
-        binding.previewView.visibility = View.GONE
-        binding.solveButton.visibility = View.GONE
+        binding.resultLinLayout.isVisible = true
+        binding.previewView.isVisible = false
+        binding.solveButton.isVisible = false
         stopCamera()
     }
 
@@ -163,6 +183,7 @@ class MainActivity : AppCompatActivity() {
             resumeCamera()
         }
     }
+
 
 
     private fun detectSquares(image: ImageProxy) {
@@ -295,5 +316,11 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        // Uygulamaya geri dönünce en baştan başla
+        resetToInitialState()
     }
 }
