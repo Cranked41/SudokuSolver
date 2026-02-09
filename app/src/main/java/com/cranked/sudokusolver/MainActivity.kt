@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         initClickListener()
         observeData()
         onBackPressedDispatcher.addCallback(this) {
-            if (binding.resultLinLayout.visibility == View.VISIBLE) {
+            if (binding.resultLinLayout.isVisible) {
                 // Result ekranındayken geri: yeniden dene gibi davran
                 binding.solvedSudokuImageView.setImageDrawable(null)
                 resumeCamera()
