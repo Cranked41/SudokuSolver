@@ -63,9 +63,6 @@ class MainActivity : AppCompatActivity() {
             if (deniedPermissions.isEmpty()) {
                 // Tüm izinler verildi
                 initiateTessOcr()
-            } else {
-                // Reddedilen izinler varsa
-                showToast("Bazı izinler reddedildi: ${deniedPermissions.keys}")
             }
         }
     private val requiredPermissions = mutableListOf<String>().apply {
