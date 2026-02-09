@@ -42,8 +42,6 @@ import kotlin.system.measureTimeMillis
 import androidx.core.view.isVisible
 
 class MainActivity : AppCompatActivity() {
-    private var preview: Preview? = null
-    private var imageAnalyzer: ImageAnalysis? = null
     private var _camera: Camera? = null
 
     private var cameraProvider: ProcessCameraProvider? = null
@@ -51,12 +49,13 @@ class MainActivity : AppCompatActivity() {
     private val sudokuSolver = SudokuSolver()
     private var tessOcr = TessOcr(this@MainActivity)
     private var trainedDataFileName = "digits.traineddata"
-    private var tfLiteFileName = "ocr_model.tflite"
 
     private val sudokuResultHasMap = hashMapOf<Int, String>()
     private val mainActivityViewModel: MainActivityViewModel by viewModels()
-    val mlKitOcrHelper = MlKitOcrHelper()
     private val ocrResultModelList = arrayListOf<SudokuResultModel>()
+
+    private var drawProcessOnSudoku = false
+
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val deniedPermissions = permissions.filterValues { !it }
@@ -153,6 +152,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resumeCamera() {
+        drawProcessOnSudoku = false
         binding.resultLinLayout.visibility = View.GONE
         binding.previewView.visibility = View.VISIBLE
         startCamera()
@@ -215,7 +215,7 @@ class MainActivity : AppCompatActivity() {
         image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
          */
         val bitmap = image.imageToBitmap() ?: return
-        mainActivityViewModel.checkSudoku(context = this@MainActivity, bitmap, rotationDegrees = 0f)
+        mainActivityViewModel.checkSudoku(bitmap, rotationDegrees = 0f)
     }
 
 
@@ -298,8 +298,7 @@ class MainActivity : AppCompatActivity() {
                         mainActivityViewModel.convertHashMapToSudokuArray(sudokuResultHasMap)
                     val original = intArray.map { it.clone() }.toTypedArray()
                     val sudokuSolver = SudokuSolver()
-                    println("SudokuResultHasMap: $sudokuResultHasMap")
-                    println("SudokuIntArray")
+
                     printSudokuAsString(intArray)
                     println("---------------------------\n")
                     if (sudokuSolver.isValidSudoku(intArray)) {
@@ -307,17 +306,16 @@ class MainActivity : AppCompatActivity() {
                         val isSolved = sudokuSolver.solveSudokuAsync(intArray)
                         if (isSolved) {
                             CoroutineScope(Dispatchers.Main).launch {
-                                println("Solved")
                                 printSudokuAsString(intArray)
-
+                                if (drawProcessOnSudoku) return@launch
                                 val gridBitmap = mainActivityViewModel.gridBitmapLiveData.value
                                 val solvedBitmap = if (gridBitmap != null) {
                                     BitmapUtil.overlaySolutionOnGrid(gridBitmap, original, intArray)
                                 } else {
-                                    // fallback: eğer grid bitmap yoksa, mevcut çizim fonksiyonunu kullan
                                     sudokuSolver.drawSudokuGrid(intArray)
                                 }
                                 showSolvedOnUi(solvedBitmap)
+                                drawProcessOnSudoku = true
                                 //showToast(getString(R.string.sudokuSolved))
                             }
                         }

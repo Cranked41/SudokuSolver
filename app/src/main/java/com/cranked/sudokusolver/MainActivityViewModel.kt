@@ -43,7 +43,7 @@ class MainActivityViewModel : ViewModel() {
     }
 
     fun checkSudoku(
-        context: Context, bitmap: Bitmap, rotationDegrees: Float = 90f
+       bitmap: Bitmap, rotationDegrees: Float = 90f
     ) {
         CoroutineScope(Dispatchers.IO + coroutineException).launch {
             if (sudokuLock) {

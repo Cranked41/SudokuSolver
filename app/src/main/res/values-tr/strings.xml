@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Sudoku Solver</string>
+    <string name="retry">Yeniden Dene</string>
+    <string name="sudokuSolved">Sudoku çözüldü</string>
+    <string name="solution">Çözüm</string>
+    <string name="please_grant_camera_permission">Lütfen Kamera iznini veriniz</string>
+</resources>

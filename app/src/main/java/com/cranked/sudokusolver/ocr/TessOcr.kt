@@ -12,8 +12,7 @@ import java.io.File
 
 class TessOcr(
     private val activity: Activity
-) : TessBaseAPI.ProgressNotifier,
-    OcrCamera.ResultListener {
+) : TessBaseAPI.ProgressNotifier{
 
 
     private var _errorLiveData = MutableLiveData<Boolean>()
@@ -32,7 +31,6 @@ class TessOcr(
 
     private var currentDirectory: File? = null
     private var mImageTextReader: ImageTextReader? = null
-    private var mPageSegMode = 1
     lateinit var ocrCamera: OcrCamera
 
 
@@ -58,7 +56,7 @@ class TessOcr(
                 }
 
                 mImageTextReader?.let {
-                    ocrCamera = OcrCamera(it, this@TessOcr)
+                    ocrCamera = OcrCamera(it)
                 } ?: run {
 
                     _errorLiveData.postValue(true)
@@ -74,13 +72,4 @@ class TessOcr(
     override fun onProgressValues(progressValues: TessBaseAPI.ProgressValues?) {
     }
 
-    override fun ocrOnSuccess(text: String) {
-
-    }
-
-
-    override fun ocrOnError(exp: Exception?) {
-
-        _errorLiveData.postValue(true)
-    }
 }
