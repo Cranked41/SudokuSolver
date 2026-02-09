@@ -13,18 +13,28 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        setProperty("archivesBaseName", "sudokuApp-v$versionCode($versionName)")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
+    signingConfigs {
+        create("release") {
+            storeFile = file("/Users/alirizacelik/Desktop/Sudoku/sudoku.jks")
+            storePassword = "Sudoku+415341"
+            keyAlias = "key0"
+            keyPassword = "Sudoku+415341"
+        }
+    }
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -57,13 +67,8 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
 
     //TessOcr
-    implementation(libs.tflite.task.vision)
-    implementation(libs.tflite.gpu.delegate)
-    implementation(libs.tflite.gpu)
-    implementation(libs.tflite)
     implementation(libs.tesseract4android)
     implementation(libs.opencv)
-    implementation (libs.mlkit.text.recognition)
     implementation(libs.sdp.android)
 
 

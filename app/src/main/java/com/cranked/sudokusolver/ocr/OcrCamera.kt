@@ -2,10 +2,6 @@ package com.cranked.sudokusolver.ocr
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.os.Build
-import android.util.Size
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
 import com.cranked.sudokusolver.model.OcrResultModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

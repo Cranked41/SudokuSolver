@@ -1,6 +1,5 @@
 package com.cranked.sudokusolver
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -9,13 +8,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.cranked.sudokusolver.model.SudokuOcrModel
-import com.cranked.sudokusolver.tensorflow.SudokuDetectionTF
 import com.cranked.sudokusolver.utils.maze.ImageUtil
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 
 class MainActivityViewModel : ViewModel() {
     private var sudokuLock = false
@@ -26,7 +23,6 @@ class MainActivityViewModel : ViewModel() {
     }
 
 
-    private var sudokuDetectionTF: SudokuDetectionTF? = null
     private var _resultBitmap = MutableLiveData<List<SudokuOcrModel>>()
     var resultBitmap: LiveData<List<SudokuOcrModel>> = _resultBitmap
 
@@ -56,7 +52,6 @@ class MainActivityViewModel : ViewModel() {
             val imageSudokuGrid = solver.extractSudokuGrid(rotateBitmap)
             _gridBitmapMutableLiveData.postValue(imageSudokuGrid)
             imageSudokuGrid?.let {
-                var tempBitmap = it
                 /* val smallGridList = solver.detect3x3Blocks(tempBitmap)
                  smallGridList?.forEachIndexed { index, sudokuBlockModel ->
                      println("SudokuBlock Blok $index: ${sudokuBlockModel.rect}")
@@ -113,8 +108,5 @@ class MainActivityViewModel : ViewModel() {
     fun initOcrVariable() {
         sudokuLock = false
     }
-
-    fun getSudokuLock() = sudokuLock
-
 
 }

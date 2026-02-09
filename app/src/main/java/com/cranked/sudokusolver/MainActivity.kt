@@ -13,9 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.Camera
-import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import com.cranked.sudokusolver.databinding.ActivityMainBinding
@@ -24,7 +22,6 @@ import com.cranked.sudokusolver.extensions.isNullOrEmptyOrBlank
 import com.cranked.sudokusolver.extensions.preprocessImage
 import com.cranked.sudokusolver.extensions.showToast
 import com.cranked.sudokusolver.model.SudokuResultModel
-import com.cranked.sudokusolver.ocr.MlKitOcrHelper
 import com.cranked.sudokusolver.ocr.TessOcr
 import com.cranked.sudokusolver.tensorflow.CameraSettings
 import com.cranked.sudokusolver.utils.BitmapUtil
@@ -99,16 +96,6 @@ class MainActivity : AppCompatActivity() {
 
         this@MainActivity.supportActionBar?.hide()
         checkAndRequestCameraPermission()
-        val model = SudokuTestModel().sudokuModels[0]
-        CoroutineScope(Dispatchers.Default).launch {
-            val initTime = System.currentTimeMillis()
-            println("Sudoku ValidState ${sudokuSolver.isValidSudoku(model.intArray)}")
-            val result = sudokuSolver.solveSudokuAsync(model.intArray)
-            if (result) {
-                println("Çözdü: ${System.currentTimeMillis() - initTime} ms")
-                printSudokuAsString(model.intArray)
-            }
-        }
     }
 
     fun printSudokuAsString(sudoku: Array<IntArray>) {
@@ -201,16 +188,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun detectSquares(image: ImageProxy) {/*
-        if (!::bitmapBuffer.isInitialized) {
-            bitmapBuffer = Bitmap.createBitmap(
-                image.width,
-                image.height,
-                Bitmap.Config.ARGB_8888
-            )
-        }
-        image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
-         */
+    private fun detectSquares(image: ImageProxy) {
         val bitmap = image.imageToBitmap() ?: return
         mainActivityViewModel.checkSudoku(bitmap, rotationDegrees = 0f)
     }

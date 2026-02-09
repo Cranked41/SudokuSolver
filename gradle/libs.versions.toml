@@ -12,12 +12,6 @@ constraintlayout = "2.1.4"
 coroutines = "1.7.3"
 camera = "1.4.0" # Kullanmak istediğiniz sürüm
 tesseract4android = "4.1.1"
-tflite-task-vision = "0.4.0"
-tflite-gpu-delegate = "0.4.0"
-tflite-gpu = "2.9.0"
-tflite = "2.16.1"
-tesseract = "4.1.1"
-tess-two = "9.1.0"
 opencv = "4.5.3.0"
 mlkit-text-recognition = "19.0.1"
 sdp = "1.1.1"
@@ -37,13 +31,9 @@ coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-androi
 androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
-tflite-task-vision = { group = "org.tensorflow", name = "tensorflow-lite-task-vision", version.ref = "tflite-task-vision" }
-tflite-gpu-delegate = { group = "org.tensorflow", name = "tensorflow-lite-gpu-delegate-plugin", version.ref = "tflite-gpu-delegate" }
-tflite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tflite-gpu" }
-tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
+
 tesseract4android = { group = "cz.adaptech", name = "tesseract4android", version.ref = "tesseract4android" }
 opencv = { module = "com.quickbirdstudios:opencv", version.ref = "opencv" }
-mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkit-text-recognition" }
 sdp-android = { group = "com.intuit.sdp", name = "sdp-android", version.ref = "sdp" }
 
 
