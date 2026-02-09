@@ -73,7 +73,7 @@ class ImageTextReader(
             //OCR CONFIDENCE RESULT
 
             ocrResultModel.ocr = textOnImage ?: ""
-            ocrResultModel?.accuracy = api?.meanConfidence() ?: 0
+            ocrResultModel.accuracy = api?.meanConfidence() ?: 0
             api?.clear()
             synchronized(recycleLock) { tessProcessing = false }
             return@withContext ocrResultModel

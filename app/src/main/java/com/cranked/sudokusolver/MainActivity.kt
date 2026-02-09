@@ -158,29 +158,6 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun initClickListener() {
-        binding.solveButton.setOnClickListener {
-            CoroutineScope(Dispatchers.Main).launch {
-                val timeTaken = measureTimeMillis {
-                    val selectedArray = SudokuTestModel().sudokuModels.random()
-                    if (sudokuSolver.isValidSudoku(selectedArray.intArray)) {
-                        if (sudokuSolver.solveSudokuAsync(selectedArray.intArray)) {
-                            binding.sudokuOutput.text = selectedArray.arrayName
-                            binding.sudokuResultImageView.setImageBitmap(
-                                sudokuSolver.drawSudokuGrid(
-                                    selectedArray.intArray
-                                )
-                            )
-                        } else {
-                            binding.sudokuOutput.text = "Sudoku çözülemedi."
-                        }
-                    } else {
-                        binding.sudokuOutput.text =
-                            "Sudoku ${selectedArray.arrayName} matrisi geçersiz!"
-                    }
-                }
-                binding.timeTakenTextView.text = "Çözüm süresi ${timeTaken} ms"
-            }
-        }
         binding.tryAgainButton.setOnClickListener {
             binding.solvedSudokuImageView.setImageDrawable(null)
             resumeCamera()
@@ -257,13 +234,12 @@ class MainActivity : AppCompatActivity() {
                                 return@async resultModel
                             }.await()
                             sudokuResultHasMap[index] =
-                                if (ocrResultModel?.ocr?.length == 2) ocrResultModel?.ocr?.first()
-                                    .toString() else if (ocrResultModel?.ocr?.length!! > 2 == true) "0" else ocrResultModel?.ocr
-                                    ?: ""
+                                if (ocrResultModel?.ocr?.length == 2) ocrResultModel.ocr.first()
+                                    .toString() else if (ocrResultModel?.ocr?.length!! > 2 == true) "0" else ocrResultModel.ocr
                             ocrResultModelList.add(
                                 SudokuResultModel(
-                                    text = ocrResultModel?.ocr ?: "",
-                                    accuracy = ocrResultModel?.accuracy ?: 0,
+                                    text = ocrResultModel.ocr,
+                                    accuracy = ocrResultModel.accuracy,
                                     cellBitmap = processedbitmap
                                 )
                             )
