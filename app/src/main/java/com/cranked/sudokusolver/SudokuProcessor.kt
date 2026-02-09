@@ -828,26 +828,6 @@ class SudokuProcessor {
 
         return variance < threshold // Varyans düşükse bulanık sayılır
     }
-    fun sharpenBitmap(bitmap: Bitmap): Bitmap {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
 
-        // Bitmap'i Mat formatına çevir
-        val mat = Mat()
-        Utils.bitmapToMat(bitmap, mat)
-
-        // Gauss bulanıklaştırma uygula
-        val blurred = Mat()
-        Imgproc.GaussianBlur(mat, blurred, Size(0.0, 0.0), 3.0)
-
-        // Keskinleştirme (sharpening) için orijinalden bulanık çıkart
-        val sharpened = Mat()
-        Core.addWeighted(mat, 1.5, blurred, -0.5, 0.0, sharpened)
-
-        // Mat'i tekrar Bitmap'e çevir
-        val outputBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, bitmap.config)
-        Utils.matToBitmap(sharpened, outputBitmap)
-
-        return outputBitmap
-    }
 
 }

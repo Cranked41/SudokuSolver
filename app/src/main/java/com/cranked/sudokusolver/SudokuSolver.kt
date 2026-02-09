@@ -15,6 +15,9 @@ class SudokuSolver {
     }
 
     fun solveSudoku(board: Array<IntArray>): Boolean {
+        if (hasThreeConsecutiveEmptyRowsOrColumns(board)) {
+            return false
+        }
         val fixedCells = getFixedCells(board) // Sabit hücreleri belirle
 
         for (row in 0..8) {
@@ -40,7 +43,7 @@ class SudokuSolver {
         }
 
         // Çözüm tamamlandıktan sonra Sudoku kurallarına uygun mu kontrol et
-        return isValidSudoku(board) && !hasEmptyRowOrColumn(board)
+        return isValidSudoku(board)
     }
 
     // **Sabit hücreleri belirleyen fonksiyon**
@@ -78,25 +81,40 @@ class SudokuSolver {
         return true
     }
 
-    // **Eğer bir satır veya sütun tamamen 0 ise Sudoku geçersizdir**
-    fun hasEmptyRowOrColumn(board: Array<IntArray>): Boolean {
-        // Satır kontrolü: Eğer bir satır tamamen 0 ise, false dön
-        for (row in board) {
-            if (row.all { it == 0 }) {
-                return true
+    // Eğer bütün satırlar VE bütün sütunlar tamamen 0 ise true döner
+    // Eğer 3 satır VEYA 3 sütun art arda tamamen 0 ise true döner
+    fun hasThreeConsecutiveEmptyRowsOrColumns(board: Array<IntArray>): Boolean {
+
+        // --- SATIR KONTROLÜ ---
+        var emptyRowCount = 0
+        for (row in 0..8) {
+            val isRowEmpty = board[row].all { it == 0 }
+
+            if (isRowEmpty) {
+                emptyRowCount++
+                if (emptyRowCount == 3) return true
+            } else {
+                emptyRowCount = 0
             }
         }
 
-        // Sütun kontrolü: Eğer bir sütun tamamen 0 ise, false dön
+        // --- SÜTUN KONTROLÜ ---
+        var emptyColCount = 0
         for (col in 0..8) {
-            var isEmpty = true
+            var isColEmpty = true
             for (row in 0..8) {
                 if (board[row][col] != 0) {
-                    isEmpty = false
+                    isColEmpty = false
                     break
                 }
             }
-            if (isEmpty) return true
+
+            if (isColEmpty) {
+                emptyColCount++
+                if (emptyColCount == 3) return true
+            } else {
+                emptyColCount = 0
+            }
         }
 
         return false
@@ -142,7 +160,6 @@ class SudokuSolver {
         }
         return true
     }
-
 
 
     fun drawSudokuGrid(sudoku: Array<IntArray>, cellSize: Int = 100): Bitmap {
